@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Stage {
+  IDEA
+  Y1_2
+  Y3_PLUS
+}
+
+enum HeardFrom {
+  INSTAGRAM
+  WHATSAPP
+  REFERRAL
+  OTHER
+}
+
+model Event {
+  id            String         @id @default(cuid())
+  title         String
+  description   String
+  date          DateTime
+  location      String
+  link          String?
+  createdAt     DateTime       @default(now())
+  registrations Registration[]
+}
+
+model Registration {
+  id           String   @id @default(cuid())
+  fullName     String
+  email        String   @unique
+  whatsapp     String
+  businessName String?
+  instagram    String?
+  stage        Stage
+  challenge    String
+  heardFrom    HeardFrom
+  createdAt    DateTime @default(now())
+  eventId      String
+  event        Event    @relation(fields: [eventId], references: [id])
+}

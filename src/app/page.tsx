@@ -1,103 +1,57 @@
-import Image from "next/image";
+// src/app/page.tsx
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main className="px-4 py-10">
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-white border rounded-2xl border-gray-200/60">
+        <div className="absolute inset-0 bg-gradient-to-br from-[color:var(--brand-accent)]/80 via-white to-white" />
+        <div className="relative p-8 md:p-12">
+          <p className="text-xs tracking-wider text-gray-500 uppercase">Free Online Workshop</p>
+          <h1 className="mt-2 text-3xl md:text-4xl font-heading text-[color:var(--brand-black)]">
+            Clarity + Consistency: Simple Systems for Startup Growth & Social Media
+          </h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <div className="mt-4 text-sm text-gray-700 md:text-base">
+            <p><strong>Date:</strong> Tuesday, 14th October 2025</p>
+            <p><strong>Time:</strong> 8:00 PM EAT</p>
+            <p><strong>Location:</strong> Online (link after registration)</p>
+          </div>
+
+          <div className="flex flex-col gap-3 mt-6 sm:flex-row">
+            <Link href="/register" className="w-full button-primary sm:w-auto">
+              Register (free)
+            </Link>
+            <Link href="/event" className="inline-flex items-center justify-center rounded-2xl px-4 py-2 font-medium border border-gray-300 text-[color:var(--brand-black)] hover:bg-gray-50">
+              See event details
+            </Link>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </section>
+
+      {/* What you'll gain */}
+      <section className="grid gap-4 mt-10 md:grid-cols-3">
+        <div className="card">
+          <h3 className="text-lg font-heading">Simple Growth Systems</h3>
+          <p className="mt-2 text-sm text-gray-600">Keep your business on track with a lightweight structure.</p>
+        </div>
+        <div className="card">
+          <h3 className="text-lg font-heading">Social Media Consistency</h3>
+          <p className="mt-2 text-sm text-gray-600">Stay visible without burnout using repeatable habits.</p>
+        </div>
+        <div className="card">
+          <h3 className="text-lg font-heading">2-Step Action Plan</h3>
+          <p className="mt-2 text-sm text-gray-600">Walk away with a simple plan you can use immediately.</p>
+        </div>
+      </section>
+
+      {/* Partner strip (subtle nod to Boratu) */}
+      <section className="p-4 mt-12 bg-white border rounded-xl border-gray-200/60">
+        <p className="text-sm text-gray-600">
+          Hosted by <strong>Axelus</strong> × <strong>Boratu Digital</strong>. Comment <em>“growth”</em> on our IG posts to spread the word.
+        </p>
+      </section>
+    </main>
   );
 }
