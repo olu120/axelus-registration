@@ -1,27 +1,45 @@
 // src/app/api/admin/export/route.ts
-export const dynamic = "force-dynamic"; // ensure fresh data
+export const dynamic = "force-dynamic";
 
 import { prisma } from "@/app/lib/prisma";
 
-// Convert registrations → CSV string
-function toCSV(rows: Record<string, any>[]) {
-  if (!rows.length)
-    return "fullName,email,whatsapp,businessName,instagram,stage,heardFrom,challenge,createdAt\n";
+type CsvRow = {
+  fullName: string;
+  email: string;
+  whatsapp: string;
+  businessName: string | null;
+  instagram: string | null;
+  stage: string;
+  heardFrom: string;
+  challenge: string;
+  createdAt: string; // ISO
+};
 
-  const headers = Object.keys(rows[0]);
-  const esc = (v: any) => {
-    const str = v ?? "";
-    const s = typeof str === "string" ? str : String(str);
-    const needs = /[",\n]/.test(s);
-    const cleaned = s.replace(/"/g, '""');
-    return needs ? `"${cleaned}"` : cleaned;
-  };
+const HEADERS = [
+  "fullName",
+  "email",
+  "whatsapp",
+  "businessName",
+  "instagram",
+  "stage",
+  "heardFrom",
+  "challenge",
+  "createdAt",
+] as const;
 
-  const lines = [
-    headers.join(","),
-    ...rows.map((r) => headers.map((h) => esc(r[h])).join(",")),
-  ];
-  return lines.join("\n");
+function escapeCsvValue(value: unknown): string {
+  const s = value === null || value === undefined ? "" : String(value);
+  const needsQuotes = /[",\n]/.test(s);
+  const cleaned = s.replace(/"/g, '""');
+  return needsQuotes ? `"${cleaned}"` : cleaned;
+}
+
+function toCSV(rows: CsvRow[]): string {
+  const headerLine = HEADERS.join(",");
+  const dataLines = rows.map((r) =>
+    HEADERS.map((h) => escapeCsvValue(r[h])).join(","),
+  );
+  return [headerLine, ...dataLines].join("\n");
 }
 
 export async function GET() {
@@ -40,7 +58,7 @@ export async function GET() {
     },
   });
 
-  const rows = regs.map((r) => ({
+  const rows: CsvRow[] = regs.map((r) => ({
     ...r,
     createdAt: new Date(r.createdAt).toISOString(),
   }));
@@ -51,7 +69,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="registrations.csv"`,
+      "Content-Disposition": 'attachment; filename="registrations.csv"',
       "Cache-Control": "no-store",
     },
   });

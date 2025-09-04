@@ -1,6 +1,5 @@
 // src/app/admin/page.tsx
 import { prisma } from "@/app/lib/prisma";
-import Link from "next/link";
 
 function fmt(date: Date) {
   return new Intl.DateTimeFormat("en-GB", {

@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import "./globals.css";
 import type { Metadata } from "next";
 import { Playfair_Display, Poppins } from "next/font/google";
