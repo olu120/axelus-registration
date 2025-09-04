@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 // src/app/admin/page.tsx
 import { prisma } from "@/app/lib/prisma";
 
