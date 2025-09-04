@@ -1,3 +1,4 @@
+// src/app/admin/registrations/[id]/delete/page.tsx
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -6,15 +7,17 @@ import { notFound, redirect } from "next/navigation";
 
 export default async function DeleteRegistrationConfirm({
   params,
-}: { params: { id: string } }) {
-  const reg = await prisma.registration.findUnique({ where: { id: params.id } });
+}: { params: Promise<{ id: string }> }) {   // 👈 params is a Promise
+  const { id } = await params;               // 👈 await it
+
+  const reg = await prisma.registration.findUnique({ where: { id } });
   if (!reg) notFound();
 
   async function doDelete(formData: FormData) {
     "use server";
-    const id = String(formData.get("id") || "");
-    if (!id) return;
-    await prisma.registration.delete({ where: { id } });
+    const rid = String(formData.get("id") || "");
+    if (!rid) return;
+    await prisma.registration.delete({ where: { id: rid } });
     redirect("/admin?updated=1");
   }
 
