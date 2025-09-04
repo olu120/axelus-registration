@@ -14,8 +14,6 @@ export default function RegisterPage() {
 
     const form = e.currentTarget;
     const fd = new FormData(form);
-
-    // Helper to coerce FormData values to strings
     const get = (k: string) => (fd.get(k) ?? "") as string;
 
     try {
@@ -28,13 +26,12 @@ export default function RegisterPage() {
           whatsapp: get("whatsapp"),
           businessName: get("businessName"),
           instagram: get("instagram"),
-          stage: get("stage"),           // IDEA | Y1_2 | Y3_PLUS
+          stage: get("stage"),
           challenge: get("challenge"),
-          heardFrom: get("heardFrom"),   // INSTAGRAM | WHATSAPP | REFERRAL | OTHER
+          heardFrom: get("heardFrom"),
         }),
       });
 
-      // Only parse JSON if the server actually sent JSON
       const ct = res.headers.get("content-type") || "";
       const payload = ct.includes("application/json")
         ? await res.json()
@@ -45,8 +42,9 @@ export default function RegisterPage() {
       }
 
       window.location.href = "/thanks";
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      setError(msg);
       setLoading(false);
     }
   }

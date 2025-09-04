@@ -5,11 +5,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { resend, EMAIL_FROM, renderReminderHTML } from "@/app/lib/email";
 
-/**
- * Secure with Authorization: Bearer <CRON_SECRET>
- * Query param: ?type=week-before | day-before | day-of
- * Optional:   ?dry=1  → don't send emails, just return preview counts
- */
+type ReminderType = "week-before" | "day-before" | "day-of";
+
+function msg(err: unknown) {
+  return err instanceof Error ? err.message : "send failed";
+}
+
 export async function GET(req: Request) {
   return handle(req);
 }
@@ -18,36 +19,33 @@ export async function POST(req: Request) {
 }
 
 async function handle(req: Request) {
-  // 1) Auth: Bearer token
   const auth = req.headers.get("authorization") || "";
   const expected = `Bearer ${process.env.CRON_SECRET || ""}`;
   if (!process.env.CRON_SECRET || auth !== expected) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  // 2) Parse type + dry-run flag
   const url = new URL(req.url);
-  const type = (url.searchParams.get("type") || "").trim() as
-    | "week-before" | "day-before" | "day-of";
+  const typeParam = (url.searchParams.get("type") || "").trim() as ReminderType;
   const dry = url.searchParams.get("dry") === "1";
 
-  if (!type || !["week-before", "day-before", "day-of"].includes(type)) {
-    return NextResponse.json({
-      ok: false,
-      error: "Missing or invalid 'type'. Use ?type=week-before|day-before|day-of",
-    }, { status: 400 });
+  if (!["week-before", "day-before", "day-of"].includes(typeParam)) {
+    return NextResponse.json(
+      { ok: false, error: "Missing or invalid 'type'. Use week-before|day-before|day-of" },
+      { status: 400 },
+    );
   }
 
-  // 3) Fetch event + registrants
   const event = await prisma.event.upsert({
     where: { id: "default-event" },
     update: {},
     create: {
       id: "default-event",
-      title: "Clarity + Consistency: Simple Systems for Startup Growth & Social Media",
+      title:
+        "Clarity + Consistency: Simple Systems for Startup Growth & Social Media",
       description:
         "Join Axelus × Boratu Digital for a free 75-minute workshop. Simple systems + social media consistency + a 2-step plan.",
-      date: new Date("2025-10-14T17:00:00.000Z"), // 8:00 PM EAT
+      date: new Date("2025-10-14T17:00:00.000Z"),
       location: "Online (link will be shared after registration)",
     },
   });
@@ -56,31 +54,25 @@ async function handle(req: Request) {
     orderBy: { createdAt: "desc" },
   });
 
-  // 4) Format date/time (EAT)
   const dateStr = new Intl.DateTimeFormat("en-GB", {
     dateStyle: "full",
     timeZone: "Africa/Nairobi",
   }).format(event.date);
-
   const timeStr = new Intl.DateTimeFormat("en-GB", {
     timeStyle: "short",
     timeZone: "Africa/Nairobi",
   }).format(event.date);
 
-  // 5) Compose subject line
   const subject =
-    type === "week-before"
+    typeParam === "week-before"
       ? `Heads-up: ${event.title} (next week)`
-      : type === "day-before"
+      : typeParam === "day-before"
       ? `Reminder: ${event.title} (tomorrow)`
       : `Today: ${event.title}`;
 
   const joinUrl = event.link || null;
 
-  // 6) Send (or dry-run)
-  const results: { email: string; sent: boolean; error?: string }[] = [];
-
-  // If no key, force dry-run to avoid throwing
+  const results: Array<{ email: string; sent: boolean; error?: string }> = [];
   const canSend = !!process.env.RESEND_API_KEY && !dry;
 
   for (const r of regs) {
@@ -92,7 +84,7 @@ async function handle(req: Request) {
           dateStr,
           timeStr,
           joinUrl,
-          type,
+          type: typeParam,
         });
 
         await resend.emails.send({
@@ -106,19 +98,19 @@ async function handle(req: Request) {
       } else {
         results.push({ email: r.email, sent: false });
       }
-    } catch (err: any) {
-      results.push({ email: r.email, sent: false, error: err?.message || "send failed" });
+    } catch (e: unknown) {
+      results.push({ email: r.email, sent: false, error: msg(e) });
     }
   }
 
   return NextResponse.json({
     ok: true,
-    type,
+    type: typeParam,
     dryRun: !canSend,
     total: regs.length,
     attempted: results.length,
-    sent: results.filter(x => x.sent).length,
-    failed: results.filter(x => x.error).length,
+    sent: results.filter((x) => x.sent).length,
+    failed: results.filter((x) => x.error).length,
     sample: results.slice(0, 5),
   });
 }

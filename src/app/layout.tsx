@@ -1,6 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 import "./globals.css";
 import type { Metadata } from "next";
 import { Playfair_Display, Poppins } from "next/font/google";
+import Image from "next/image";
 
 const heading = Playfair_Display({ subsets: ["latin"], variable: "--font-heading" });
 const body = Poppins({ subsets: ["latin"], weight: ["300","400","500","600"], variable: "--font-body" });
@@ -17,9 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="bg-white border-b">
           <div className="flex items-center justify-between max-w-5xl px-4 py-3 mx-auto">
             <div className="flex items-center gap-3">
-              <img src="/axelus-logo.png" alt="Axelus" className="w-auto h-8" />
+              <Image src="/logo-axelus.png" alt="Axelus" width={120} height={32} className="w-auto h-8" priority />
               <span className="w-px h-6 bg-gray-200" />
-              <img src="/partner-logo.png" alt="Boratu" className="w-auto h-8" />
+              <Image src="/partner-logo.png" alt="Axelus" width={120} height={32} className="w-auto h-8" priority />
             </div>
             <nav className="text-sm">
               <a className="hover:opacity-70" href="/event">Event</a>
