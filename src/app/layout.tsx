@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="bg-white border-b">
           <div className="flex items-center justify-between max-w-5xl px-4 py-3 mx-auto">
             <div className="flex items-center gap-3">
-              <Image src="/axelus.png" alt="Axelus" width={120} height={32} className="w-auto h-8" priority />
+              <Image src="/axelus-logo.png" alt="Axelus" width={120} height={32} className="w-auto h-8" priority />
               <span className="w-px h-6 bg-gray-200" />
               <Image src="/partner-logo.png" alt="Axelus" width={120} height={32} className="w-auto h-8" priority />
             </div>
