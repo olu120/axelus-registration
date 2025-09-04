@@ -7,9 +7,11 @@ import { Stage, HeardFrom } from "@prisma/client";
 
 export default async function EditRegistrationPage({
   params,
-}: { params: { id: string } }) {
+}: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   const reg = await prisma.registration.findUnique({
-    where: { id: params.id },
+    where: { id },
   });
   if (!reg) notFound();
 
