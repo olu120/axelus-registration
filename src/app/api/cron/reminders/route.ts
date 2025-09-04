@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
-import { resend, EMAIL_FROM, renderReminderHTML } from "@/app/lib/email";
+import { sendEmail, EMAIL_FROM, renderReminderHTML } from "@/app/lib/email";
 
 type ReminderType = "week-before" | "day-before" | "day-of";
 
@@ -19,12 +19,14 @@ export async function POST(req: Request) {
 }
 
 async function handle(req: Request) {
+  // Auth via Bearer <CRON_SECRET>
   const auth = req.headers.get("authorization") || "";
   const expected = `Bearer ${process.env.CRON_SECRET || ""}`;
   if (!process.env.CRON_SECRET || auth !== expected) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
+  // Params
   const url = new URL(req.url);
   const typeParam = (url.searchParams.get("type") || "").trim() as ReminderType;
   const dry = url.searchParams.get("dry") === "1";
@@ -36,6 +38,7 @@ async function handle(req: Request) {
     );
   }
 
+  // Ensure event exists
   const event = await prisma.event.upsert({
     where: { id: "default-event" },
     update: {},
@@ -45,15 +48,17 @@ async function handle(req: Request) {
         "Clarity + Consistency: Simple Systems for Startup Growth & Social Media",
       description:
         "Join Axelus × Boratu Digital for a free 75-minute workshop. Simple systems + social media consistency + a 2-step plan.",
-      date: new Date("2025-10-14T17:00:00.000Z"),
+      date: new Date("2025-10-14T17:00:00.000Z"), // 8:00 PM EAT
       location: "Online (link will be shared after registration)",
     },
   });
 
+  // Fetch registrants
   const regs = await prisma.registration.findMany({
     orderBy: { createdAt: "desc" },
   });
 
+  // Format event time in EAT
   const dateStr = new Intl.DateTimeFormat("en-GB", {
     dateStyle: "full",
     timeZone: "Africa/Nairobi",
@@ -63,6 +68,7 @@ async function handle(req: Request) {
     timeZone: "Africa/Nairobi",
   }).format(event.date);
 
+  // Subject per reminder type
   const subject =
     typeParam === "week-before"
       ? `Heads-up: ${event.title} (next week)`
@@ -72,8 +78,10 @@ async function handle(req: Request) {
 
   const joinUrl = event.link || null;
 
-  const results: Array<{ email: string; sent: boolean; error?: string }> = [];
+  // Decide whether to actually send
   const canSend = !!process.env.RESEND_API_KEY && !dry;
+
+  const results: Array<{ email: string; sent: boolean; error?: string }> = [];
 
   for (const r of regs) {
     try {
@@ -87,8 +95,7 @@ async function handle(req: Request) {
           type: typeParam,
         });
 
-        await resend.emails.send({
-          from: EMAIL_FROM,
+        await sendEmail({
           to: r.email,
           subject,
           html,

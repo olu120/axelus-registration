@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { registrationSchema } from "@/app/lib/validation";
-import { resend, EMAIL_FROM, renderReceiptHTML } from "@/app/lib/email";
+import { sendEmail, EMAIL_FROM, renderReceiptHTML } from "@/app/lib/email";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +22,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = registrationSchema.parse(body);
 
+    // Ensure default event exists
     const event = await prisma.event.upsert({
       where: { id: "default-event" },
       update: {},
@@ -31,11 +32,12 @@ export async function POST(req: Request) {
           "Clarity + Consistency: Simple Systems for Startup Growth & Social Media",
         description:
           "Join Axelus × Boratu Digital for a free 75-minute workshop. Simple systems + social media consistency + a 2-step plan.",
-        date: new Date("2025-10-14T17:00:00.000Z"),
+        date: new Date("2025-10-14T17:00:00.000Z"), // 8:00 PM EAT
         location: "Online (link will be shared after registration)",
       },
     });
 
+    // Upsert registration by email
     const reg = await prisma.registration.upsert({
       where: { email: data.email },
       update: {
@@ -61,6 +63,7 @@ export async function POST(req: Request) {
       },
     });
 
+    // Send confirmation email only if a key is configured (safe in build)
     if (process.env.RESEND_API_KEY) {
       const dateStr = new Intl.DateTimeFormat("en-GB", {
         dateStyle: "full",
@@ -70,14 +73,15 @@ export async function POST(req: Request) {
         timeStyle: "short",
         timeZone: "Africa/Nairobi",
       }).format(event.date);
+
       const html = renderReceiptHTML({
         fullName: reg.fullName,
         eventTitle: event.title,
         dateStr,
         timeStr,
       });
-      await resend.emails.send({
-        from: EMAIL_FROM,
+
+      await sendEmail({
         to: reg.email,
         subject: `You're in: ${event.title}`,
         html,

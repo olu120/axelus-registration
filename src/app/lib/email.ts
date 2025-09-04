@@ -1,8 +1,31 @@
 // src/lib/email.ts
 import { Resend } from "resend";
 
-export const resend = new Resend(process.env.RESEND_API_KEY || "");
-export const EMAIL_FROM = process.env.EMAIL_FROM || "Axelus <no-reply@example.com>";
+// Do NOT construct Resend at module top if there's no key.
+// Keep it lazy to avoid build-time throws.
+export const EMAIL_FROM =
+  process.env.EMAIL_FROM || "Axelus <no-reply@axelusglobal.com>";
+
+function getResend(): Resend | null {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return null;
+  return new Resend(key);
+}
+
+export async function sendEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  const client = getResend();
+  if (!client) return; // no-op in dev or when key not set
+  await client.emails.send({
+    from: EMAIL_FROM,
+    to: opts.to,
+    subject: opts.subject,
+    html: opts.html,
+  });
+}
 
 export function renderReceiptHTML(opts: {
   fullName: string;
@@ -24,8 +47,6 @@ export function renderReceiptHTML(opts: {
   `;
 }
 
-// Add under your existing exports in src/lib/email.ts
-
 export function renderReminderHTML(opts: {
   fullName: string;
   eventTitle: string;
@@ -43,10 +64,9 @@ export function renderReminderHTML(opts: {
       ? "Your workshop is tomorrow — we can't wait to see you!"
       : "Today’s the day!";
 
-  const cta =
-    joinUrl
-      ? `<p><a href="${joinUrl}" style="display:inline-block;padding:10px 16px;border-radius:10px;background:#008080;color:#fff;text-decoration:none;">Join the workshop</a></p>`
-      : `<p>We’ll send you the join link shortly before the session.</p>`;
+  const cta = joinUrl
+    ? `<p><a href="${joinUrl}" style="display:inline-block;padding:10px 16px;border-radius:10px;background:#008080;color:#fff;text-decoration:none;">Join the workshop</a></p>`
+    : `<p>We’ll send you the join link shortly before the session.</p>`;
 
   return `
   <div style="font-family:Inter,system-ui,sans-serif;line-height:1.6">
@@ -60,4 +80,3 @@ export function renderReminderHTML(opts: {
     <p>— Team Axelus × Boratu Digital</p>
   </div>`;
 }
-
