@@ -5,10 +5,8 @@ import { prisma } from "@/app/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { Stage, HeardFrom } from "@prisma/client";
 
-export default async function EditRegistrationPage({
-  params,
-}: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function EditRegistrationPage(props: any) {
+  const { id } = await props.params;
 
   const reg = await prisma.registration.findUnique({
     where: { id },
