@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { registrationSchema } from "@/app/lib/validation";
-import { sendEmail, EMAIL_FROM, renderReceiptHTML } from "@/app/lib/email";
+import { sendEmail, renderReceiptHTML } from "@/app/lib/email";
 
 export const dynamic = "force-dynamic";
 

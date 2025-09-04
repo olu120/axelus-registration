@@ -3,12 +3,36 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
-import { sendEmail, EMAIL_FROM, renderReminderHTML } from "@/app/lib/email";
+import { sendEmail, renderReminderHTML } from "@/app/lib/email";
 
-type ReminderType = "week-before" | "day-before" | "day-of";
+type ReminderType = "week-before" | "day-before" | "day-of" | "auto";
 
 function msg(err: unknown) {
   return err instanceof Error ? err.message : "send failed";
+}
+
+function startOfDayInTZ(date: Date, timeZone: string) {
+  // Convert to the given TZ and zero out time
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [day, month, year] = fmt.formatToParts(date).reduce<string[]>((acc, p) => {
+    if (p.type === "day") acc[0] = p.value;
+    else if (p.type === "month") acc[1] = p.value;
+    else if (p.type === "year") acc[2] = p.value;
+    return acc;
+  }, ["", "", ""]);
+  return new Date(`${year}-${month}-${day}T00:00:00.000Z`);
+}
+
+function diffDaysInTZ(a: Date, b: Date, timeZone: string) {
+  const A = startOfDayInTZ(a, timeZone).getTime();
+  const B = startOfDayInTZ(b, timeZone).getTime();
+  const diffMs = (B - A);
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
 export async function GET(req: Request) {
@@ -26,19 +50,10 @@ async function handle(req: Request) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  // Params
   const url = new URL(req.url);
-  const typeParam = (url.searchParams.get("type") || "").trim() as ReminderType;
+  const typeParam = (url.searchParams.get("type") || "auto").trim() as ReminderType;
   const dry = url.searchParams.get("dry") === "1";
 
-  if (!["week-before", "day-before", "day-of"].includes(typeParam)) {
-    return NextResponse.json(
-      { ok: false, error: "Missing or invalid 'type'. Use week-before|day-before|day-of" },
-      { status: 400 },
-    );
-  }
-
-  // Ensure event exists
   const event = await prisma.event.upsert({
     where: { id: "default-event" },
     update: {},
@@ -52,6 +67,28 @@ async function handle(req: Request) {
       location: "Online (link will be shared after registration)",
     },
   });
+
+  // Resolve type automatically based on EAT day difference
+  let resolvedType: Exclude<ReminderType, "auto"> | null = null;
+  if (typeParam === "auto") {
+    const now = new Date();
+    const days = diffDaysInTZ(now, event.date, "Africa/Nairobi");
+    if (days === 7) resolvedType = "week-before";
+    else if (days === 1) resolvedType = "day-before";
+    else if (days === 0) resolvedType = "day-of";
+    else resolvedType = null; // not a send day
+  } else {
+    resolvedType = typeParam as Exclude<ReminderType, "auto">;
+  }
+
+  if (!resolvedType) {
+    return NextResponse.json({
+      ok: true,
+      type: "auto",
+      skipped: true,
+      reason: "Not a scheduled reminder day",
+    });
+  }
 
   // Fetch registrants
   const regs = await prisma.registration.findMany({
@@ -70,9 +107,9 @@ async function handle(req: Request) {
 
   // Subject per reminder type
   const subject =
-    typeParam === "week-before"
+    resolvedType === "week-before"
       ? `Heads-up: ${event.title} (next week)`
-      : typeParam === "day-before"
+      : resolvedType === "day-before"
       ? `Reminder: ${event.title} (tomorrow)`
       : `Today: ${event.title}`;
 
@@ -92,7 +129,7 @@ async function handle(req: Request) {
           dateStr,
           timeStr,
           joinUrl,
-          type: typeParam,
+          type: resolvedType,
         });
 
         await sendEmail({
@@ -112,7 +149,7 @@ async function handle(req: Request) {
 
   return NextResponse.json({
     ok: true,
-    type: typeParam,
+    type: resolvedType,
     dryRun: !canSend,
     total: regs.length,
     attempted: results.length,
