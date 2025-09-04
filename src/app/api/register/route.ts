@@ -8,7 +8,6 @@ export const dynamic = "force-dynamic";
 
 function toMessage(err: unknown) {
   if (err && typeof err === "object" && "issues" in err) {
-    // zod error style
     const z = err as { issues?: Array<{ message?: string }> };
     return z.issues?.[0]?.message ?? "Invalid request";
   }
@@ -79,6 +78,7 @@ export async function POST(req: Request) {
         eventTitle: event.title,
         dateStr,
         timeStr,
+        joinUrl: event.link ?? null, // include link if set in editor
       });
 
       await sendEmail({
@@ -88,7 +88,14 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ ok: true, id: reg.id });
+    // Success response + allow access to /thanks for 10 minutes
+    const res = NextResponse.json({ ok: true, id: reg.id });
+    res.cookies.set("just_registered", "1", {
+      httpOnly: true,
+      maxAge: 60 * 10, // 10 minutes
+      path: "/",
+    });
+    return res;
   } catch (err: unknown) {
     const message = toMessage(err);
     console.error("API error:", message);

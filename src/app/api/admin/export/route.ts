@@ -16,6 +16,7 @@ type CsvRow = {
 };
 
 const HEADERS = [
+  "id",
   "fullName",
   "email",
   "whatsapp",

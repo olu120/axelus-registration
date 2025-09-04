@@ -1,56 +1,47 @@
-// src/app/page.tsx
-import Link from "next/link";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-export default function Home() {
+import { getDefaultEvent } from "@/app/lib/event";
+import Image from "next/image";
+
+export default async function HomePage() {
+  const event = await getDefaultEvent();
+
+  const dateStr = event
+    ? new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeZone: "Africa/Nairobi" }).format(event.date)
+    : "";
+  const timeStr = event
+    ? new Intl.DateTimeFormat("en-GB", { timeStyle: "short", timeZone: "Africa/Nairobi" }).format(event.date)
+    : "";
+
   return (
-    <main className="px-4 py-10">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-white border rounded-2xl border-gray-200/60">
-        <div className="absolute inset-0 bg-gradient-to-br from-[color:var(--brand-accent)]/80 via-white to-white" />
-        <div className="relative p-8 md:p-12">
-          <p className="text-xs tracking-wider text-gray-500 uppercase">Free Online Workshop</p>
-          <h1 className="mt-2 text-3xl md:text-4xl font-heading text-[color:var(--brand-black)]">
-            Clarity + Consistency: Simple Systems for Startup Growth & Social Media
+    <main className="accent-bg">
+      <section className="grid items-center max-w-5xl gap-8 px-4 py-10 mx-auto md:grid-cols-2">
+        <div className="space-y-4">
+          <h1 className="text-3xl md:text-4xl font-heading text-ink">
+            {event?.title ?? "Upcoming Workshop"}
           </h1>
-
-          <div className="mt-4 text-sm text-gray-700 md:text-base">
-            <p><strong>Date:</strong> Tuesday, 14th October 2025</p>
-            <p><strong>Time:</strong> 8:00 PM EAT</p>
-            <p><strong>Location:</strong> Online (link after registration)</p>
-          </div>
-
-          <div className="flex flex-col gap-3 mt-6 sm:flex-row">
-            <Link href="/register" className="w-full button-primary sm:w-auto">
-              Register (free)
-            </Link>
-            <Link href="/event" className="inline-flex items-center justify-center rounded-2xl px-4 py-2 font-medium border border-gray-300 text-[color:var(--brand-black)] hover:bg-gray-50">
-              See event details
-            </Link>
+          {event && (
+            <p className="text-gray-700">
+              Date: {dateStr} • Time: {timeStr} EAT • Location: {event.location}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <a href="/register" className="button-primary">Register Free</a>
+            <a href="/event" className="button-primary !bg-gray-700">Event Details</a>
           </div>
         </div>
-      </section>
 
-      {/* What you'll gain */}
-      <section className="grid gap-4 mt-10 md:grid-cols-3">
-        <div className="card">
-          <h3 className="text-lg font-heading">Simple Growth Systems</h3>
-          <p className="mt-2 text-sm text-gray-600">Keep your business on track with a lightweight structure.</p>
+        {/* Brand lockup / hero (optional) */}
+        <div className="flex justify-center">
+          <Image
+            src="/Axelus X Boratu.jpg" // adjust to your asset path
+            alt="Axelus × Boratu"
+            width={520}
+            height={320}
+            className="shadow-sm rounded-2xl"
+          />
         </div>
-        <div className="card">
-          <h3 className="text-lg font-heading">Social Media Consistency</h3>
-          <p className="mt-2 text-sm text-gray-600">Stay visible without burnout using repeatable habits.</p>
-        </div>
-        <div className="card">
-          <h3 className="text-lg font-heading">2-Step Action Plan</h3>
-          <p className="mt-2 text-sm text-gray-600">Walk away with a simple plan you can use immediately.</p>
-        </div>
-      </section>
-
-      {/* Partner strip (subtle nod to Boratu) */}
-      <section className="p-4 mt-12 bg-white border rounded-xl border-gray-200/60">
-        <p className="text-sm text-gray-600">
-          Hosted by <strong>Axelus</strong> × <strong>Boratu Digital</strong>. Comment <em>“growth”</em> on our IG posts to spread the word.
-        </p>
       </section>
     </main>
   );

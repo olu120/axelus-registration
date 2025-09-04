@@ -46,3 +46,12 @@ model Registration {
   eventId      String
   event        Event    @relation(fields: [eventId], references: [id])
 }
+
+model RateLimit {
+  id        String   @id @default(cuid())
+  ip        String   @db.VarChar(64)
+  route     String   @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  @@index([ip, route, createdAt])
+}

@@ -1,85 +1,63 @@
 // src/app/thanks/page.tsx
-import { prisma } from "@/app/lib/prisma";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-function formatInEAT(date: Date) {
-  const dateStr = new Intl.DateTimeFormat("en-GB", {
-    dateStyle: "full",
-    timeZone: "Africa/Nairobi",
-  }).format(date);
-  const timeStr = new Intl.DateTimeFormat("en-GB", {
-    timeStyle: "short",
-    timeZone: "Africa/Nairobi",
-  }).format(date);
-  return { dateStr, timeStr };
-}
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { getDefaultEvent } from "@/app/lib/event";
+import ShareButtons from "./share-buttons";
 
 export default async function ThanksPage() {
-  // fetch the default event (seeded or upserted by the API)
-  const event =
-    (await prisma.event.findUnique({ where: { id: "default-event" } })) ??
-    null;
+  // ✅ await cookies() before using .get()
+  const cookieStore = await cookies();
+  const ck = cookieStore.get("just_registered");
+  if (!ck) redirect("/register");
 
-  const { dateStr, timeStr } = event
-    ? formatInEAT(event.date)
-    : { dateStr: "Tuesday, 14 October 2025", timeStr: "8:00 PM EAT" };
+  const event = await getDefaultEvent();
+
+  const dateStr = event
+    ? new Intl.DateTimeFormat("en-GB", { dateStyle: "full", timeZone: "Africa/Nairobi" }).format(event.date)
+    : "";
+  const timeStr = event
+    ? new Intl.DateTimeFormat("en-GB", { timeStyle: "short", timeZone: "Africa/Nairobi" }).format(event.date)
+    : "";
 
   return (
-    <section className="min-h-[60vh] grid place-items-center bg-[color:var(--brand-accent)]/40 p-6">
-      <article className="w-full max-w-2xl card">
-        <h1 className="text-3xl text-center md:text-4xl font-heading text-primary">
-          You’re registered! 🎉
-        </h1>
+    <section className="min-h-[60vh] accent-bg p-4 md:py-10">
+      <div className="max-w-2xl mx-auto space-y-4 card">
+        <h1 className="text-2xl font-heading">You’re registered! 🎉</h1>
 
-        <div className="mt-4 space-y-3 text-center">
-          <p>
-            Thank you for signing up for{" "}
-            <strong>
-              {event?.title ??
-                "Clarity + Consistency: Simple Systems for Startup Growth & Social Media"}
-            </strong>
-            .
-          </p>
+        {event && (
+          <>
+            <p>
+              <strong>{event.title}</strong><br />
+              Date: {dateStr} • Time: {timeStr} EAT<br />
+              Location: {event.location}
+            </p>
 
-          <p>
-            <strong>Date:</strong> {dateStr}
-            <br />
-            <strong>Time:</strong> {timeStr}
-            <br />
-            <strong>Location:</strong>{" "}
-            {event?.location ?? "Online (link will be shared after registration)"}
-          </p>
+            {event.link ? (
+              <p>
+                Join link:{" "}
+                <a href={event.link} className="underline break-words text-primary" target="_blank">
+                  {event.link}
+                </a>
+              </p>
+            ) : (
+              <p className="text-gray-600">We’ll email you the join link closer to the session.</p>
+            )}
+          </>
+        )}
 
-          <div className="rounded-xl p-4 bg-[color:var(--brand-accent)]/70">
-            We’ll send you the workshop link + reminders via WhatsApp & Email.
-          </div>
-
-          <p className="text-xs italic text-gray-600">
-            Don’t forget: comment “growth” on our IG posts to spread the word!
-          </p>
-
-          <p className="mt-1">— Team Axelus × Boratu Digital</p>
+        <div className="flex flex-wrap gap-2 pt-2">
+          <a href="/event" className="button-primary !bg-gray-700">Back to Event Details</a>
+          <ShareButtons />
+<a href="/api/ics" className="button-primary !bg-amber-500" title="Add to Calendar">
+  Add to Calendar (.ics)
+</a>
         </div>
 
-        {/* CTA row */}
-        <div className="flex flex-col items-center justify-center gap-3 mt-6 sm:flex-row">
-          {/* secondary button (border style) */}
-          <a
-            href="https://instagram.com/"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center rounded-2xl px-4 py-2 font-medium border border-gray-300 text-[color:var(--brand-black)] hover:bg-gray-50"
-          >
-            Share on Instagram
-          </a>
-
-          <a
-            href="/event"
-            className="button-primary"
-          >
-            Back to Event Details
-          </a>
-        </div>
-      </article>
+        <p className="text-sm text-gray-500">Check your email for a confirmation. See you there!</p>
+      </div>
     </section>
   );
 }
