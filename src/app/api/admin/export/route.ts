@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/app/lib/prisma";
 
 type CsvRow = {
+  id: string;
   fullName: string;
   email: string;
   whatsapp: string;
@@ -12,10 +13,10 @@ type CsvRow = {
   stage: string;
   heardFrom: string;
   challenge: string;
-  createdAt: string; // ISO
+  createdAt: string; // ISO string
 };
 
-const HEADERS = [
+const HEADERS: (keyof CsvRow)[] = [
   "id",
   "fullName",
   "email",
@@ -26,10 +27,10 @@ const HEADERS = [
   "heardFrom",
   "challenge",
   "createdAt",
-] as const;
+];
 
 function escapeCsvValue(value: unknown): string {
-  const s = value === null || value === undefined ? "" : String(value);
+  const s = value == null ? "" : String(value);
   const needsQuotes = /[",\n]/.test(s);
   const cleaned = s.replace(/"/g, '""');
   return needsQuotes ? `"${cleaned}"` : cleaned;
@@ -47,6 +48,7 @@ export async function GET() {
   const regs = await prisma.registration.findMany({
     orderBy: { createdAt: "desc" },
     select: {
+      id: true,
       fullName: true,
       email: true,
       whatsapp: true,
