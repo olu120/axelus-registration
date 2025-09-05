@@ -78,7 +78,12 @@ export async function POST(req: Request) {
         eventTitle: event.title,
         dateStr,
         timeStr,
-        joinUrl: event.link ?? null, // include link if set in editor
+        joinUrl: event.link ?? null,          // include link if set in editor
+
+        // NEW: Google Calendar link support
+        startISO: event.date.toISOString(),
+        location: event.location ?? null,
+        description: event.description ?? null,
       });
 
       await sendEmail({

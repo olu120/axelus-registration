@@ -31,7 +31,7 @@ function startOfDayInTZ(date: Date, timeZone: string) {
 function diffDaysInTZ(a: Date, b: Date, timeZone: string) {
   const A = startOfDayInTZ(a, timeZone).getTime();
   const B = startOfDayInTZ(b, timeZone).getTime();
-  const diffMs = (B - A);
+  const diffMs = B - A;
   return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
@@ -130,6 +130,11 @@ async function handle(req: Request) {
           timeStr,
           joinUrl,
           type: resolvedType,
+
+          // NEW: Google Calendar link support
+          startISO: event.date.toISOString(),
+          location: event.location ?? null,
+          description: event.description ?? null,
         });
 
         await sendEmail({

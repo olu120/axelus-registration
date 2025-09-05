@@ -39,12 +39,12 @@ const BORATU_URL =
 
 const BRAND = {
   primary: "#008080", // Axelus teal
-  accent: "#EDBE2E", // Boratu gold
-  ink: "#111827", // gray-900
-  subtle: "#6B7280", // gray-500
-  bg: "#F9FAFB", // gray-50
-  card: "#FFFFFF", // white
-  border: "#E5E7EB", // gray-200
+  accent: "#EDBE2E",  // Boratu gold
+  ink: "#111827",     // gray-900
+  subtle: "#6B7280",  // gray-500
+  bg: "#F9FAFB",      // gray-50
+  card: "#FFFFFF",    // white
+  border: "#E5E7EB",  // gray-200
 };
 
 // ---- Types ------------------------------------------------------------------
@@ -52,14 +52,54 @@ const BRAND = {
 type ReceiptArgs = {
   fullName: string;
   eventTitle: string;
-  dateStr: string;
-  timeStr: string;
+  dateStr: string;      // human-readable for email body
+  timeStr: string;      // human-readable for email body
   joinUrl?: string | null;
+
+  // for Google Calendar link
+  startISO?: string;           // event.date.toISOString()
+  location?: string | null;
+  description?: string | null;
 };
 
 type ReminderArgs = ReceiptArgs & {
   type: "week-before" | "day-before" | "day-of";
 };
+
+// ---- Google Calendar helpers ------------------------------------------------
+
+function toGoogleDate(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    d.getUTCFullYear().toString() +
+    pad(d.getUTCMonth() + 1) +
+    pad(d.getUTCDate()) +
+    "T" +
+    pad(d.getUTCHours()) +
+    pad(d.getUTCMinutes()) +
+    pad(d.getUTCSeconds()) +
+    "Z"
+  );
+}
+
+function makeGoogleCalUrl(args: {
+  startISO: string;
+  durationMin?: number; // default 75
+  title: string;
+  details?: string;
+  location?: string;
+}) {
+  const start = new Date(args.startISO);
+  const end = new Date(start.getTime() + (args.durationMin ?? 75) * 60_000);
+  const dates = `${toGoogleDate(start)}/${toGoogleDate(end)}`;
+  return (
+    "https://calendar.google.com/calendar/render" +
+    `?action=TEMPLATE&text=${encodeURIComponent(args.title)}` +
+    `&dates=${dates}` +
+    (args.details ? `&details=${encodeURIComponent(args.details)}` : "") +
+    (args.location ? `&location=${encodeURIComponent(args.location)}` : "")
+  );
+}
 
 // ---- Templates --------------------------------------------------------------
 
@@ -69,6 +109,9 @@ export function renderReceiptHTML({
   dateStr,
   timeStr,
   joinUrl,
+  startISO,
+  location,
+  description,
 }: ReceiptArgs) {
   const joinBlock = joinUrl
     ? `
@@ -96,13 +139,39 @@ export function renderReceiptHTML({
   // Add to Calendar button (ICS)
   const icsBlock = `
     <tr>
-      <td style="padding: 0 24px 16px;">
+      <td style="padding: 0 24px 8px;">
         <a href="${ICS_URL}" target="_blank"
            style="display:inline-block; background:${BRAND.accent}; color:${BRAND.ink}; text-decoration:none; padding:12px 20px; border-radius:12px; font-weight:700">
           Add to Calendar (.ics)
         </a>
       </td>
     </tr>`;
+
+  // Google Calendar text link (optional, appears if startISO present)
+  const gcalUrl =
+    startISO
+      ? makeGoogleCalUrl({
+          startISO,
+          durationMin: 75,
+          title: eventTitle,
+          details:
+            (description ? `${description}\n\n` : "") +
+            (joinUrl ? `Join: ${joinUrl}` : ""),
+          location: location ?? undefined,
+        })
+      : null;
+
+  const gcalTextLink = gcalUrl
+    ? `
+      <tr>
+        <td style="padding: 0 24px 16px; font-size:13px;">
+          Prefer Google Calendar?
+          <a href="${gcalUrl}" target="_blank" style="color:${BRAND.primary}; font-weight:600; text-decoration:none">
+            Add via Google
+          </a>
+        </td>
+      </tr>`
+    : "";
 
   return `
   <!doctype html>
@@ -154,6 +223,7 @@ export function renderReceiptHTML({
 
             ${joinBlock}
             ${icsBlock}
+            ${gcalTextLink}
 
             <!-- Divider -->
             <tr><td style="padding:16px 24px;">
@@ -202,6 +272,9 @@ export function renderReminderHTML({
   timeStr,
   joinUrl,
   type,
+  startISO,
+  location,
+  description,
 }: ReminderArgs) {
   const headline =
     type === "week-before"
@@ -235,13 +308,38 @@ export function renderReminderHTML({
 
   const icsBlock = `
     <tr>
-      <td style="padding: 0 24px 16px;">
+      <td style="padding: 0 24px 8px;">
         <a href="${ICS_URL}" target="_blank"
            style="display:inline-block; background:${BRAND.accent}; color:${BRAND.ink}; text-decoration:none; padding:12px 20px; border-radius:12px; font-weight:700">
           Add to Calendar (.ics)
         </a>
       </td>
     </tr>`;
+
+  const gcalUrl =
+    startISO
+      ? makeGoogleCalUrl({
+          startISO,
+          durationMin: 75,
+          title: eventTitle,
+          details:
+            (description ? `${description}\n\n` : "") +
+            (joinUrl ? `Join: ${joinUrl}` : ""),
+          location: location ?? undefined,
+        })
+      : null;
+
+  const gcalTextLink = gcalUrl
+    ? `
+      <tr>
+        <td style="padding: 0 24px 16px; font-size:13px;">
+          Prefer Google Calendar?
+          <a href="${gcalUrl}" target="_blank" style="color:${BRAND.primary}; font-weight:600; text-decoration:none">
+            Add via Google
+          </a>
+        </td>
+      </tr>`
+    : "";
 
   return `
   <!doctype html>
@@ -264,7 +362,13 @@ export function renderReminderHTML({
             </tr>
 
             <tr>
-              <td style="padding:20px 24px 8px;">
+              <td style="padding:8px 24px 0; color:${BRAND.subtle}; font-size:14px;">
+                Hi ${escapeHtml(fullName)},
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:12px 24px 8px;">
                 <div style="font-size:18px; font-weight:700;">${escapeHtml(eventTitle)}</div>
               </td>
             </tr>
@@ -280,6 +384,7 @@ export function renderReminderHTML({
 
             ${joinBlock}
             ${icsBlock}
+            ${gcalTextLink}
 
             <tr><td style="padding:16px 24px;">
               <div style="height:1px; background:${BRAND.border};"></div>
